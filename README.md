@@ -3,7 +3,6 @@ This package is slim wrapper around the Logic4 API. It's an opinionated integrat
 
 # How to use
 ```php
-
 // Set configuration 
 $connector = new \Wndr\Logic4\Connectors\Logic4Connector();
 $connector->setAdministrationId('xx')
@@ -23,3 +22,6 @@ $request = new \Wndr\Logic4\Requests\Orders\GetOrders([
 // Get results
 $response = $connector->send($request)->json();
 ```
+
+# Install
+`composer require wndr/logic4`
