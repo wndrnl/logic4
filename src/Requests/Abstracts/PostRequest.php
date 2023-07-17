@@ -12,7 +12,7 @@ abstract class PostRequest extends Request implements HasBody
     use HasJsonBody;
     protected Method $method = Method::POST;
     public function __construct(
-        protected ?array $b = null
+        protected array $b
     ){}
 
     protected function defaultBody(): array
