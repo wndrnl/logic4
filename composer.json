@@ -1,0 +1,20 @@
+{
+    "name": "wndr/logic4",
+    "description": "Logic4 PHP-SDK",
+    "require": {
+        "sammyjo20/saloon": "^2.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Wndr\\Logic4\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Len van essen",
+            "email": "len@wndr.digital"
+        }
+    ],
+    "minimum-stability": "stable"
+}
