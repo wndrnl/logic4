@@ -15,7 +15,7 @@ abstract class PostRequest extends Request implements HasBody
         protected mixed $b
     ){}
 
-    protected function defaultBody(): array
+    protected function defaultBody(): mixed
     {
         return $this->b;
     }
