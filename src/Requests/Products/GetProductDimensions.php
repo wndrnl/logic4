@@ -8,6 +8,6 @@ class GetProductDimensions extends PostRequest
 {
     public function resolveEndpoint(): string
     {
-        return '/v1.1/Products/GetProductDimensions';
+        return '/v1/Products/GetProductDimensions';
     }
 }
