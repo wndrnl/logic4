@@ -15,6 +15,6 @@ class GetStockForWarehouses extends PostRequest
 
     public function resolveEndpoint(): string
     {
-        return '/v1/Stock/GetStockForWarehouses';
+        return '/v1.1/Stock/GetStockForWarehouses';
     }
 }
