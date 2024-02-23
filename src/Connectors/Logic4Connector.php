@@ -121,7 +121,7 @@ class Logic4Connector extends Connector
 
     public function resolveBaseUrl(): string
     {
-        return 'https://api.logic4server.nl';
+        return getenv('LOGIC4_BASE_URL') ?: 'https://api.logic4server.nl';
     }
 
     protected function defaultHeaders(): array
