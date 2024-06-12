@@ -2,7 +2,7 @@
     "name": "wndr/logic4",
     "description": "Logic4 PHP-SDK",
     "require": {
-        "sammyjo20/saloon": "^2.0"
+        "saloonphp/saloon": "^3.0"
     },
     "license": "MIT",
     "autoload": {
