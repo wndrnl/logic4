@@ -7,7 +7,8 @@ use Saloon\Http\Connector;
 use Saloon\Http\Request;
 use Saloon\Traits\OAuth2\ClientCredentialsGrant;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
-
+use Saloon\Exceptions\Request\FatalRequestException;
+use Saloon\Exceptions\Request\RequestException;
 class Logic4Connector extends Connector
 {
     use ClientCredentialsGrant, AlwaysThrowOnErrors;
@@ -18,7 +19,7 @@ class Logic4Connector extends Connector
     protected ?string $username = null;
     protected ?string $password = null;
     protected ?int $administrationId = null;
-
+    public ?int $tries = 3;
     /**
      * @param string|null $publicKey
      * @return Logic4Connector
@@ -130,6 +131,15 @@ class Logic4Connector extends Connector
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
+    }
+
+    public function handleRetry(FatalRequestException|RequestException $exception, Request $request): bool
+    {
+        if ($exception instanceof RequestException && $exception->getResponse()->status() === 401) {
+            $request->authenticate($this->getAccessToken());
+        }
+
+        return true;
     }
 
     protected function defaultOauthConfig(): OAuthConfig
