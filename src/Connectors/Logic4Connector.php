@@ -19,7 +19,6 @@ class Logic4Connector extends Connector
     protected ?string $username = null;
     protected ?string $password = null;
     protected ?int $administrationId = null;
-    public ?int $tries = 3;
     /**
      * @param string|null $publicKey
      * @return Logic4Connector
