@@ -3,6 +3,7 @@
 namespace Wndr\Logic4\Connectors;
 
 use Saloon\Http\Auth\AccessTokenAuthenticator;
+use Saloon\Http\OAuth2\GetClientCredentialsTokenRequest;
 use Saloon\Http\PendingRequest;
 use Saloon\Helpers\OAuth2\OAuthConfig;
 use Saloon\Http\Connector;
@@ -167,7 +168,7 @@ class Logic4Connector extends Connector
 
         // Skip authentication for the OAuth token request itself to prevent infinite recursion
         $requestUrl = $pendingRequest->getUrl();
-        if (str_contains($requestUrl, 'idp.logic4server.nl/token')) {
+        if ($pendingRequest->getRequest() instanceof GetClientCredentialsTokenRequest) {
             return;
         }
 
