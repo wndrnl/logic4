@@ -2,6 +2,9 @@
 
 namespace Wndr\Logic4\Connectors;
 
+use Carbon\CarbonImmutable;
+use Saloon\Contracts\OAuthAuthenticatorInterface;
+use Saloon\Contracts\PendingRequest;
 use Saloon\Helpers\OAuth2\OAuthConfig;
 use Saloon\Http\Connector;
 use Saloon\Http\Request;
@@ -9,6 +12,7 @@ use Saloon\Traits\OAuth2\ClientCredentialsGrant;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Exceptions\Request\RequestException;
+
 class Logic4Connector extends Connector
 {
     use ClientCredentialsGrant, AlwaysThrowOnErrors;
@@ -19,6 +23,16 @@ class Logic4Connector extends Connector
     protected ?string $username = null;
     protected ?string $password = null;
     protected ?int $administrationId = null;
+
+    /**
+     * Cached OAuth authenticator containing the access token
+     */
+    protected ?OAuthAuthenticatorInterface $oauthAuthenticator = null;
+
+    /**
+     * Buffer in seconds before token expiry to trigger re-authentication
+     */
+    protected int $tokenExpiryBuffer = 60;
     /**
      * @param string|null $publicKey
      * @return Logic4Connector
@@ -132,10 +146,101 @@ class Logic4Connector extends Connector
         ];
     }
 
+    /**
+     * Boot the connector and register authentication middleware
+     */
+    public function boot(PendingRequest $pendingRequest): void
+    {
+        $pendingRequest->middleware()->onRequest(function (PendingRequest $pendingRequest) {
+            $this->ensureValidAuthentication($pendingRequest);
+        });
+    }
+
+    /**
+     * Ensure we have a valid access token before making the request
+     */
+    protected function ensureValidAuthentication(PendingRequest $pendingRequest): void
+    {
+        // Skip if no credentials are configured
+        if (empty($this->publicKey) || empty($this->privateKey)) {
+            return;
+        }
+
+        // Check if we need to (re)authenticate
+        if ($this->shouldAuthenticate()) {
+            $this->oauthAuthenticator = $this->getAccessToken();
+        }
+
+        // Apply the authenticator to the pending request
+        if ($this->oauthAuthenticator !== null) {
+            $this->oauthAuthenticator->set($pendingRequest);
+        }
+    }
+
+    /**
+     * Determine if we should authenticate (no token or token about to expire)
+     */
+    protected function shouldAuthenticate(): bool
+    {
+        // No authenticator yet - need to authenticate
+        if ($this->oauthAuthenticator === null) {
+            return true;
+        }
+
+        // Check if token has expired or is about to expire
+        if ($this->oauthAuthenticator->hasExpired()) {
+            return true;
+        }
+
+        // Check if token will expire within the buffer period
+        $expiresAt = $this->oauthAuthenticator->getExpiresAt();
+
+        if ($expiresAt !== null) {
+            $bufferTime = CarbonImmutable::now()->addSeconds($this->tokenExpiryBuffer);
+
+            if ($expiresAt->lessThanOrEqualTo($bufferTime)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Set a custom token expiry buffer in seconds
+     */
+    public function setTokenExpiryBuffer(int $seconds): static
+    {
+        $this->tokenExpiryBuffer = $seconds;
+
+        return $this;
+    }
+
+    /**
+     * Get the current OAuth authenticator
+     */
+    public function getOAuthAuthenticator(): ?OAuthAuthenticatorInterface
+    {
+        return $this->oauthAuthenticator;
+    }
+
+    /**
+     * Set an OAuth authenticator (useful for restoring from cache)
+     */
+    public function setOAuthAuthenticator(?OAuthAuthenticatorInterface $authenticator): static
+    {
+        $this->oauthAuthenticator = $authenticator;
+
+        return $this;
+    }
+
     public function handleRetry(FatalRequestException|RequestException $exception, Request $request): bool
     {
         if ($exception instanceof RequestException && $exception->getResponse()->status() === 401) {
-            $request->authenticate($this->getAccessToken());
+            // Force re-authentication on 401
+            $this->oauthAuthenticator = null;
+            $this->oauthAuthenticator = $this->getAccessToken();
+            $request->authenticate($this->oauthAuthenticator);
         }
 
         return true;
