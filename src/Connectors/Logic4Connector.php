@@ -2,9 +2,8 @@
 
 namespace Wndr\Logic4\Connectors;
 
-use Carbon\CarbonImmutable;
-use Saloon\Contracts\OAuthAuthenticatorInterface;
-use Saloon\Contracts\PendingRequest;
+use Saloon\Http\Auth\AccessTokenAuthenticator;
+use Saloon\Http\PendingRequest;
 use Saloon\Helpers\OAuth2\OAuthConfig;
 use Saloon\Http\Connector;
 use Saloon\Http\Request;
@@ -27,7 +26,7 @@ class Logic4Connector extends Connector
     /**
      * Cached OAuth authenticator containing the access token
      */
-    protected ?OAuthAuthenticatorInterface $oauthAuthenticator = null;
+    protected ?AccessTokenAuthenticator $oauthAuthenticator = null;
 
     /**
      * Buffer in seconds before token expiry to trigger re-authentication
@@ -166,6 +165,12 @@ class Logic4Connector extends Connector
             return;
         }
 
+        // Skip authentication for the OAuth token request itself to prevent infinite recursion
+        $requestUrl = $pendingRequest->getUrl();
+        if (str_contains($requestUrl, 'idp.logic4server.nl/token')) {
+            return;
+        }
+
         // Check if we need to (re)authenticate
         if ($this->shouldAuthenticate()) {
             $this->oauthAuthenticator = $this->getAccessToken();
@@ -196,9 +201,9 @@ class Logic4Connector extends Connector
         $expiresAt = $this->oauthAuthenticator->getExpiresAt();
 
         if ($expiresAt !== null) {
-            $bufferTime = CarbonImmutable::now()->addSeconds($this->tokenExpiryBuffer);
+            $bufferTime = (new \DateTimeImmutable())->modify("+{$this->tokenExpiryBuffer} seconds");
 
-            if ($expiresAt->lessThanOrEqualTo($bufferTime)) {
+            if ($expiresAt <= $bufferTime) {
                 return true;
             }
         }
@@ -219,7 +224,7 @@ class Logic4Connector extends Connector
     /**
      * Get the current OAuth authenticator
      */
-    public function getOAuthAuthenticator(): ?OAuthAuthenticatorInterface
+    public function getOAuthAuthenticator(): ?AccessTokenAuthenticator
     {
         return $this->oauthAuthenticator;
     }
@@ -227,7 +232,7 @@ class Logic4Connector extends Connector
     /**
      * Set an OAuth authenticator (useful for restoring from cache)
      */
-    public function setOAuthAuthenticator(?OAuthAuthenticatorInterface $authenticator): static
+    public function setOAuthAuthenticator(?AccessTokenAuthenticator $authenticator): static
     {
         $this->oauthAuthenticator = $authenticator;
 
