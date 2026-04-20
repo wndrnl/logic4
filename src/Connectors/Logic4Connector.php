@@ -259,6 +259,7 @@ class Logic4Connector extends Connector
             ->setClientSecret("{$this->privateKey} {$this->password}")
             ->setDefaultScopes(['api', "administration.{$this->administrationId}"])
             ->setTokenEndpoint('https://idp.logic4server.nl/token')
+            ->setAllowBaseUrlOverride(true)
             ->setRequestModifier(function (Request $request) {
                 $request->headers()->set(['Content-Type'=> ' application/x-www-form-urlencoded']);
             });
