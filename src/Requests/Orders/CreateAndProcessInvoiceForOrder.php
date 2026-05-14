@@ -3,13 +3,14 @@
 
 namespace Wndr\Logic4\Requests\Orders;
 
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
-use Saloon\Traits\Body\HasBody;
 use Saloon\Http\Request;
-use Saloon\Contracts\Body\HasBody as HasBodyContract;
-class CreateAndProcessInvoiceForOrder extends Request implements HasBodyContract
+use Saloon\Traits\Body\HasStringBody;
+
+class CreateAndProcessInvoiceForOrder extends Request implements HasBody
 {
-    use HasBody;
+    use HasStringBody;
 
     protected Method $method = Method::POST;
 
